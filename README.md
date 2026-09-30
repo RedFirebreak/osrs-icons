@@ -163,6 +163,9 @@ second request, `cf-cache-status: HIT`.
 
 - **Changing `Cache-Control` later:** rclone skips files whose checksum is unchanged, so new
   headers won't reach existing objects. Run one upload with `--ignore-checksum`.
+- **rclone reads every `RCLONE_*` environment variable as a flag:** `RCLONE_VERSION=v1.75.1` becomes
+  `--version=v1.75.1` and aborts the upload. Workflow variables that aren't rclone settings must use
+  another prefix; the pin is `PIN_RCLONE_VERSION`.
 - **Rendering is single-threaded:** RuneLite's rasterizer keeps static state.
 - **No `/sprites/{id}` path, on purpose:** add a semantic alias to `scripts/aliases.mjs` instead,
   and only ever add to it.

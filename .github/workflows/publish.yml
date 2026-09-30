@@ -27,8 +27,8 @@ permissions:
 env:
   ICONS_URL: ${{ vars.ICONS_URL || 'https://icons.scapekeeper.com' }}
   R2_BUCKET: ${{ vars.R2_BUCKET || 'osrs-icons' }}
-  RCLONE_VERSION: v1.75.1
-  RCLONE_SHA256: 982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab
+  PIN_RCLONE_VERSION: v1.75.1
+  PIN_RCLONE_SHA256: 982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab
 
 jobs:
   publish:
@@ -107,8 +107,8 @@ jobs:
       - name: Install rclone
         if: steps.go.outputs.run == 'true' && !inputs.dry_run
         run: |
-          curl -fsSLo rclone.zip "https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-amd64.zip"
-          echo "${RCLONE_SHA256}  rclone.zip" | sha256sum -c -
+          curl -fsSLo rclone.zip "https://downloads.rclone.org/${PIN_RCLONE_VERSION}/rclone-${PIN_RCLONE_VERSION}-linux-amd64.zip"
+          echo "${PIN_RCLONE_SHA256}  rclone.zip" | sha256sum -c -
           unzip -q -j rclone.zip "*/rclone" -d "$RUNNER_TEMP/bin"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
