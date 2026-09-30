@@ -44,6 +44,8 @@ jobs:
 
       - name: Check whether a publish is needed
         id: check
+        # A dry run must work before the CDN exists, so an unreachable host doesn't fail it.
+        continue-on-error: ${{ inputs.dry_run == true }}
         run: node scripts/check-live.mjs "$ICONS_URL"
 
       - name: Decide
@@ -76,7 +78,14 @@ jobs:
 
       - name: Verify
         if: steps.go.outputs.run == 'true'
-        run: node scripts/verify.mjs dist --previous "$ICONS_URL/manifest.json"
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/verify.mjs dist
+          else
+            node scripts/verify.mjs dist --previous "$ICONS_URL/manifest.json"
+          fi
 
       - name: Summary
         if: steps.go.outputs.run == 'true'
