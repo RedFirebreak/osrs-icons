@@ -105,7 +105,8 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
 
 - **Schedule:** Thursday and Monday 06:00 UTC, plus manual `workflow_dispatch`.
 - **Skip check:** `scripts/check-live.mjs` compares the selected cache id and the generator hash
-  (`scripts/generator-hash.mjs`) with the live `manifest.json`. If both match, the run stops within
+  (`scripts/generator-hash.mjs`, which covers only files that shape the output) with the live
+  `manifest.json`. If both match, the run stops within
   seconds.
 - **Upload:** `rclone copy --checksum` to R2, so only changed bytes are sent. `manifest.json` goes
   last. Nothing is ever deleted.
@@ -113,6 +114,15 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
 - **Manual inputs:**
   - `force` rebuilds and re-uploads (still checksum-diffed).
   - `dry_run` builds, verifies and attaches `dist/` as a workflow artifact without publishing.
+
+**Monitoring:** a failed scheduled run emails the repo owner, so "no email" means healthy. Two guards
+make that true:
+
+- **Keepalive:** every run calls `gh workflow enable`, because GitHub disables schedules after 60 days
+  without commits.
+- **Staleness:** if OpenRS2 has listed a newer game build for more than 3 days and it still isn't
+  published, the run fails with an explanation. The usual causes are a cache that never completes, or
+  a pipeline failure.
 
 A failing run leaves the live icons untouched. The usual cause is a new cache format that
 `net.runelite:cache` can't read yet. The dependency is `latest.release`, so the next run after

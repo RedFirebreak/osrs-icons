@@ -17,8 +17,14 @@ const ARCHIVE = "https://archive.openrs2.org";
 const COMPLETENESS_WINDOW = 10;
 const COMPLETENESS_RATIO = 0.98;
 
-export function selectCache(caches) {
-  const live = caches
+// A game build newer than the one we publish may sit incomplete in the archive for a while; after
+// this long it means our pipeline (or OpenRS2) is stuck, and the run fails so someone gets an email.
+export const STALE_AFTER_DAYS = 3;
+
+const buildOf = (c) => c.builds?.[0]?.major ?? null;
+
+function liveCaches(caches) {
+  return caches
     .filter(
       (c) =>
         c.scope === "runescape" &&
@@ -29,6 +35,24 @@ export function selectCache(caches) {
         !c.hidden,
     )
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+/**
+ * Null when `publishedBuild` is current. Otherwise a message: the archive has listed a newer build for
+ * more than STALE_AFTER_DAYS (counted from that build's first listing) and we still don't publish it.
+ */
+export function staleness(caches, publishedBuild, now = Date.now()) {
+  const live = liveCaches(caches);
+  const newest = Math.max(...live.map(buildOf).filter((b) => b != null));
+  if (!Number.isFinite(newest) || publishedBuild == null || newest <= publishedBuild) return null;
+  const firstSeen = Math.min(...live.filter((c) => buildOf(c) === newest).map((c) => new Date(c.timestamp)));
+  const days = (now - firstSeen) / 86_400_000;
+  if (days <= STALE_AFTER_DAYS) return null;
+  return `build ${newest} has been in the OpenRS2 archive for ${days.toFixed(1)} days, but only build ${publishedBuild} is published (no complete cache for it, or the pipeline is failing)`;
+}
+
+export function selectCache(caches) {
+  const live = liveCaches(caches);
 
   const recentMaxGroups = Math.max(0, ...live.slice(0, COMPLETENESS_WINDOW).map((c) => c.groups ?? 0));
 
@@ -44,7 +68,7 @@ export function selectCache(caches) {
   }
   return {
     id: cache.id,
-    build: cache.builds?.[0]?.major ?? null,
+    build: buildOf(cache),
     timestamp: cache.timestamp,
   };
 }

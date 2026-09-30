@@ -1,5 +1,6 @@
-// A content hash of everything that shapes the output. A change here forces a republish even when
-// the game cache is unchanged. Line endings are normalised so Windows checkouts hash like CI.
+// A content hash of everything that shapes the published files. A change here forces a republish even
+// when the game cache is unchanged. Scripts that only decide or check (check-live, verify, this file)
+// are left out on purpose. Line endings are normalised so Windows checkouts hash like CI.
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,7 +12,8 @@ const INPUTS = [
   "generator/settings.gradle.kts",
   "generator/gradle/wrapper/gradle-wrapper.properties",
   "generator/src",
-  "scripts",
+  "scripts/build.mjs",
+  "scripts/aliases.mjs",
   "package-lock.json",
 ];
 

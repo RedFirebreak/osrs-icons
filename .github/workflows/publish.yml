@@ -23,6 +23,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write # keepalive: re-enable this workflow
 
 env:
   ICONS_URL: ${{ vars.ICONS_URL || 'https://icons.scapekeeper.com' }}
@@ -35,6 +36,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      # GitHub disables scheduled workflows after 60 days without commits. Enabling it through the
+      # API on every run resets that timer, so the schedule survives a quiet repo.
+      - name: Keepalive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable publish.yml --repo "$GITHUB_REPOSITORY"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
@@ -159,3 +167,14 @@ jobs:
           else
             gh release create "$tag" "$tarball" dist/manifest.json --title "Icons ${tag}" --notes "$notes"
           fi
+
+      # Runs last so whatever could be published was. A newer game build that stays unpublished for
+      # days (no complete cache, or a failing pipeline) fails the run, which emails the repo owner.
+      - name: Fail if stale
+        if: always() && steps.check.outputs.stale != ''
+        env:
+          STALE: ${{ steps.check.outputs.stale }}
+        run: |
+          echo "### Stale: $STALE" >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::$STALE"
+          exit 1

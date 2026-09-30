@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { selectCache } from "../scripts/fetch-cache.mjs";
+import { selectCache, staleness } from "../scripts/fetch-cache.mjs";
 
 const cache = (id, timestamp, groups, extra = {}) => ({
   id,
@@ -49,4 +49,16 @@ test("skips caches with invalid groups or indexes, other games and hidden entrie
 
 test("throws when nothing qualifies", () => {
   assert.throws(() => selectCache([]), /No complete live oldschool cache/);
+});
+
+test("staleness: current, recently listed, and stuck newer builds", () => {
+  const now = Date.parse("2026-10-10T00:00:00Z");
+  const caches = [
+    cache(1, "2026-10-01T00:00:00Z", 117000), // build 201
+    cache(2, "2026-10-08T00:00:00Z", 7000, { builds: [{ major: 202 }] }), // newer build, still partial
+  ];
+  assert.equal(staleness(caches, 202, now), null); // already published
+  assert.equal(staleness(caches, 201, now), null); // 202 listed only 2 days ago
+  assert.match(staleness(caches, 201, now + 2 * 86_400_000), /build 202 .* only build 201 is published/);
+  assert.equal(staleness(caches, null, now), null);
 });
