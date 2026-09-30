@@ -1,0 +1,20 @@
+{
+  "name": "osrs-icons",
+  "private": true,
+  "description": "Generates OSRS item, skill and equipment-slot icons from the game cache and publishes them to icons.scapekeeper.com",
+  "license": "BSD-2-Clause",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "verify": "node scripts/verify.mjs dist",
+    "select-cache": "node scripts/fetch-cache.mjs --select-only",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "sharp": "0.35.5",
+    "unzipper": "0.12.5"
+  }
+}

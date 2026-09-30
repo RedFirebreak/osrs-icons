@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.work/
+generator/build/
+generator/.gradle/
+*.tar.gz
+.build.*

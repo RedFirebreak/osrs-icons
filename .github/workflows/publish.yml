@@ -1,0 +1,152 @@
+name: Publish icons
+
+on:
+  schedule:
+    # OSRS updates land on Wednesday; OpenRS2 usually has the full cache by Thursday morning.
+    # Monday catches late archives. Both are cheap when nothing changed (see the check step).
+    - cron: "0 6 * * 4"
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild and upload even if the live manifest is up to date
+        type: boolean
+        default: false
+      dry_run:
+        description: Build and verify only; attach dist/ as a workflow artifact
+        type: boolean
+        default: false
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  ICONS_URL: ${{ vars.ICONS_URL || 'https://icons.scapekeeper.com' }}
+  R2_BUCKET: ${{ vars.R2_BUCKET || 'osrs-icons' }}
+  RCLONE_VERSION: v1.75.1
+  RCLONE_SHA256: 982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Check whether a publish is needed
+        id: check
+        run: node scripts/check-live.mjs "$ICONS_URL"
+
+      - name: Decide
+        id: go
+        env:
+          PUBLISH: ${{ steps.check.outputs.publish }}
+          FORCE: ${{ inputs.force }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          REASON: ${{ steps.check.outputs.reason }}
+        run: |
+          if [ "$PUBLISH" = "true" ] || [ "$FORCE" = "true" ] || [ "$DRY_RUN" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "### Building: ${REASON} (force=${FORCE:-false}, dry_run=${DRY_RUN:-false})" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "### Up to date: ${REASON}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        if: steps.go.outputs.run == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+        if: steps.go.outputs.run == 'true'
+
+      - name: Build
+        if: steps.go.outputs.run == 'true'
+        run: node scripts/build.mjs --out dist
+
+      - name: Verify
+        if: steps.go.outputs.run == 'true'
+        run: node scripts/verify.mjs dist --previous "$ICONS_URL/manifest.json"
+
+      - name: Summary
+        if: steps.go.outputs.run == 'true'
+        run: |
+          {
+            echo '```json'
+            cat dist/manifest.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach dist (dry run)
+        if: steps.go.outputs.run == 'true' && inputs.dry_run
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+      - name: Install rclone
+        if: steps.go.outputs.run == 'true' && !inputs.dry_run
+        run: |
+          curl -fsSLo rclone.zip "https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-amd64.zip"
+          echo "${RCLONE_SHA256}  rclone.zip" | sha256sum -c -
+          unzip -q -j rclone.zip "*/rclone" -d "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Upload to R2
+        if: steps.go.outputs.run == 'true' && !inputs.dry_run
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+          IMAGE_CACHE: "Cache-Control: public, max-age=86400, stale-while-revalidate=604800"
+          JSON_CACHE: "Cache-Control: public, max-age=300"
+        # `copy`, never `sync`: published paths are never deleted. --checksum compares MD5s, so only
+        # files whose bytes changed are uploaded. manifest.json goes last; it marks the publish done.
+        run: |
+          set -euo pipefail
+          common=(--checksum --fast-list --transfers 32 --stats-one-line --stats 30s)
+          rclone copy dist/items  "r2:$R2_BUCKET/items"  "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/webp"
+          rclone copy dist/skills "r2:$R2_BUCKET/skills" "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/png"
+          rclone copy dist/slots  "r2:$R2_BUCKET/slots"  "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/png"
+          rclone copy dist/data   "r2:$R2_BUCKET/data"   "${common[@]}" --header-upload "$JSON_CACHE" --header-upload "Content-Type: application/json"
+          rclone copyto dist/manifest.json "r2:$R2_BUCKET/manifest.json" --ignore-times \
+            --header-upload "$JSON_CACHE" --header-upload "Content-Type: application/json"
+
+      - name: GitHub release
+        if: steps.go.outputs.run == 'true' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          build=$(node -p 'require("./dist/manifest.json").osrsBuild')
+          openrs2=$(node -p 'require("./dist/manifest.json").openrs2.id')
+          tag="rev${build}-${openrs2}"
+          tarball="osrs-icons-${tag}.tar.gz"
+          tar -czf "$tarball" -C dist .
+          notes=$(node -e '
+            const m = require("./dist/manifest.json");
+            console.log(`OSRS build ${m.osrsBuild}, [OpenRS2 cache ${m.openrs2.id}](https://archive.openrs2.org/caches/runescape/${m.openrs2.id}) (${m.openrs2.timestamp}).`);
+            console.log("");
+            console.log("| | count |\n|---|---|");
+            for (const [k, v] of Object.entries(m.counts)) console.log(`| ${k} | ${v} |`);
+            console.log("");
+            console.log("Extract into any web root to self-host; the layout matches " + process.env.ICONS_URL + ".");')
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$tarball" dist/manifest.json --clobber
+          else
+            gh release create "$tag" "$tarball" dist/manifest.json --title "Icons ${tag}" --notes "$notes"
+          fi

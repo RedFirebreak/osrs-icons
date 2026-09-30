@@ -1,0 +1,23 @@
+osrs-icons
+
+Game assets
+-----------
+The images and data published by this project (item icons, skill and equipment-slot sprites, stack
+tables) are extracted from the Old School RuneScape game cache. Old School RuneScape and all of its
+assets are the property of Jagex Ltd. No ownership is claimed. They are provided unmodified in
+substance (re-encoded, scaled 2x) for use by non-commercial fan tools, in the spirit of Jagex's fan
+content guidelines. For takedown or questions, open an issue at
+https://github.com/RedFirebreak/osrs-icons/issues.
+
+Cache source
+------------
+Game caches are downloaded from the OpenRS2 Archive (https://archive.openrs2.org).
+
+Third-party code
+----------------
+- generator/src/main/java/net/runelite/cache/item/IconItemSpriteFactory.java is derived from
+  RuneLite's net.runelite.cache.item.ItemSpriteFactory, Copyright (c) 2018, Adam <Adam@sigterm.info>,
+  BSD-2-Clause (license text kept in the file header), via the cache scripts of
+  christoabrown/group-ironmen (https://github.com/christoabrown/group-ironmen).
+- The generator depends on net.runelite:cache (https://github.com/runelite/runelite), BSD-2-Clause.
+- sharp (Apache-2.0) and unzipper (MIT) are used by the build scripts.
