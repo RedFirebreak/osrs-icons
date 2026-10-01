@@ -3,7 +3,8 @@
 //   node scripts/build.mjs [--out dist] [--work .work]
 //
 // dist/
-//   items/{id}.webp  skills/{skill}.png  slots/{slot}.png  data/stacks.json  manifest.json
+//   items/{id}.webp  skills/{skill}.png  slots/{slot}.png  manifest.json
+//   data/{stacks,items,noted,placeholders,equipment,skills,slots}.json
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -11,6 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { ALIAS_GROUPS, allSpriteIds } from "./aliases.mjs";
+import { buildCollections } from "./collections.mjs";
 import { downloadCache } from "./fetch-cache.mjs";
 import { generatorHash } from "./generator-hash.mjs";
 
@@ -113,6 +115,12 @@ for (const [group, table] of Object.entries(ALIAS_GROUPS)) {
 const stacks = JSON.parse(fs.readFileSync(path.join(rawDir, "stacks.json"), "utf8"));
 fs.writeFileSync(path.join(outDir, "data", "stacks.json"), JSON.stringify(stacks));
 
+log("writing data collections");
+const collections = buildCollections(JSON.parse(fs.readFileSync(path.join(rawDir, "defs.json"), "utf8")));
+for (const [name, collection] of Object.entries(collections)) {
+  fs.writeFileSync(path.join(outDir, "data", `${name}.json`), JSON.stringify(collection));
+}
+
 const manifest = {
   schema: 1,
   generatedAt: new Date().toISOString(),
@@ -126,6 +134,8 @@ const manifest = {
     placeholders: stats.placeholders,
     ...aliasCounts,
     stacks: Object.keys(stacks).length,
+    named: Object.keys(collections.items).length,
+    equipment: Object.keys(collections.equipment).length,
   },
 };
 fs.writeFileSync(path.join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");

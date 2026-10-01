@@ -227,3 +227,28 @@ osrs-icons/
   locally.
 - `ItemManager.link()` is called so noted, placeholder and bought ids get their template's model.
 - The JDK is 21 (Temurin) and `net.runelite:cache` resolves to 1.13.1.
+
+## Addendum: data collections (2026-10-01)
+
+Upstream publishes an `item_data.json` next to its icons. We now publish per-category collections
+under `/data/`: `items`, `noted`, `placeholders`, `equipment`, `skills` and `slots`, next to
+`stacks`. The README holds the contract.
+
+- **Split:** `IconDump` writes the raw definition of every rendered id to `defs.json`.
+  `scripts/collections.mjs` does all the interpretation, so it is testable without a cache.
+- **Rule:** a collection only lists ids that have an icon. 16,856 named items, 6,045 of them
+  equipment (cache 2727, build 241).
+- **Names** equal upstream's on all 16,828 shared ids. **`highalch`** is `floor(cost × 0.6)`, as
+  upstream computes it. Upstream then zeroes 1,615 items the wiki lists as non-alchable; we don't
+  use the wiki, so ours keeps the raw value.
+- **Equipment bonuses** come from unnamed cache params: 0–4 attack, 5–9 defence, 10 strength,
+  11 prayer, 12 ranged strength, 13 attack range, 14 attack speed, 299 magic damage in tenths of a
+  percent. They were matched against the in-game stats of about 25 well-known items. `verify`
+  checks three of them loosely, so a renumbering fails the run.
+- **Left out on purpose:**
+  - Skill requirements (params 434–437 and others). They are right for most items, but for some
+    they hold the level to make the item: the fire battlestaff shows Crafting 62 and not its real
+    Attack 30 and Magic 30.
+  - `stackable` value 2. Raid potions and charged weapons carry it, so it doesn't mean the item
+    stacks. Only value 1 is published as `stackable`.
+  - Ids with a blank or `null` name: 2,828 stack variants and interface-only models.
