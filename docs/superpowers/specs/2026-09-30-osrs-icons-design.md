@@ -75,7 +75,7 @@ osrs-icons/
 - No Worker and no hotlink protection.
 
 ### `publish.yml`
-**Triggers:** cron on Thursday at 06:00 (after the Wednesday game update) and Monday at 06:00, plus `workflow_dispatch` with `force` and `dry_run`. `concurrency: publish`, `contents: write`.
+**Triggers:** cron on Wednesday at 21:00 (the evening of the game update) and Sunday at 12:00, both Europe/Amsterdam, plus `workflow_dispatch` with `force` and `dry_run`. `concurrency: publish`, `contents: write`.
 
 **Steps:**
 1. **Skip check:** run `fetch-cache --select-only`, compute the generator hash (tree hash of `generator/` + `scripts/` + the lockfile), and fetch the live `manifest.json`. If nothing has changed, exit early.

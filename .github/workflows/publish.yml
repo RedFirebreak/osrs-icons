@@ -2,10 +2,13 @@ name: Publish icons
 
 on:
   schedule:
-    # OSRS updates land on Wednesday; OpenRS2 usually has the full cache by Thursday morning.
-    # Monday catches late archives. Both are cheap when nothing changed (see the check step).
-    - cron: "0 6 * * 4"
-    - cron: "0 6 * * 1"
+    # OSRS updates land on Tuesday or Wednesday afternoon; OpenRS2 has the full cache within hours,
+    # so Wednesday evening publishes the same day. Sunday catches late archives and hotfixes.
+    # Both are cheap when nothing changed (see the check step).
+    - cron: "0 21 * * 3"
+      timezone: Europe/Amsterdam
+    - cron: "0 12 * * 0"
+      timezone: Europe/Amsterdam
   workflow_dispatch:
     inputs:
       force:

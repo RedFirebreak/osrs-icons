@@ -103,7 +103,7 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
 
 ### Publishing (`.github/workflows/publish.yml`)
 
-- **Schedule:** Thursday and Monday 06:00 UTC, plus manual `workflow_dispatch`.
+- **Schedule:** Wednesday 21:00 and Sunday 12:00 (Europe/Amsterdam), plus manual `workflow_dispatch`.
 - **Skip check:** `scripts/check-live.mjs` compares the selected cache id and the generator hash
   (`scripts/generator-hash.mjs`, which covers only files that shape the output) with the live
   `manifest.json`. If both match, the run stops within
