@@ -19,6 +19,11 @@ Paths are stable and **never deleted**. New ids are only ever added.
 | `/skills/{skill}.png` | Skill icon. `{skill}` is the lowercase skill name: `attack` … `sailing`. There is no icon for "overall". |
 | `/slots/{slot}.png` | Empty equipment-slot silhouette. `{slot}` is RuneLite's `EquipmentInventorySlot` in lowercase: `head cape amulet weapon body shield legs gloves boots ring ammo`. |
 | `/data/stacks.json` | Stack tables: `{"995": [[2, 996], [3, 997], …, [10000, 1004]]}`. Each entry is a quantity breakpoint and the variant item id, sorted by breakpoint. |
+| `/data/items.json` | Every named item that has an icon, with its game data. See [Data collections](#data-collections). |
+| `/data/noted.json` | `{"4152": 4151}`: noted id → the item it is a note of. |
+| `/data/placeholders.json` | `{"14032": 4151}`: bank placeholder id → the item it stands in for. |
+| `/data/equipment.json` | Slot and bonuses of every wearable item in `items.json`. |
+| `/data/skills.json`, `/data/slots.json` | The valid `{skill}` and `{slot}` names, as arrays. |
 | `/manifest.json` | What is live: `osrsBuild`, `openrs2.{id,timestamp}`, `runeliteCache`, `generator`, `generatedAt`, `counts`. |
 
 Every response has `Access-Control-Allow-Origin: *`. Images are cached for a day (`max-age=86400`,
@@ -46,6 +51,72 @@ itemIconUrl(base, stacks, 995, 250); // → https://icons.scapekeeper.com/items/
 skillIconUrl(base, "Attack");        // → …/skills/attack.png
 slotIconUrl(base, "AMULET");         // → …/slots/amulet.png
 ```
+
+### Data collections
+
+The collections index the icons: an id is only listed when `/items/{id}.webp` exists, and a link
+(`noted`, `placeholder`, `bought`) is only present when its target has an icon too. All of it comes
+from the game cache. Fields are only ever added.
+
+**`items.json`** is keyed by item id. Noted and placeholder ids are not in it; look those up in
+`noted.json` or `placeholders.json` first, then read the base item here.
+
+```json
+{
+  "4151": {
+    "name": "Abyssal whip",
+    "examine": "A weapon from the Abyss.",
+    "value": 120001,
+    "highalch": 72000,
+    "lowalch": 48000,
+    "members": true,
+    "tradeable": true,
+    "ge": true,
+    "weight": 0.453,
+    "options": ["Wield", "Drop"],
+    "noted": 4152,
+    "placeholder": 14032
+  }
+}
+```
+
+- `name`, `value`, `highalch` and `lowalch` are always present. Every other field is left out when
+  it is false, zero, empty or unknown.
+- `value` is the store price. `highalch` and `lowalch` are 60% and 40% of it, rounded down. The cache
+  doesn't say whether an item can actually be alched.
+- `tradeable` is player-to-player; `ge` is the Grand Exchange.
+- `weight` is in kg and can be negative.
+- `options` are the inventory actions, in menu order.
+- `bought` is the untradeable copy the Grand Exchange hands out (a bought bond). That copy is listed
+  too, with `base` pointing back.
+- Ids the cache leaves unnamed (stack variants such as `996`, interface-only models) have an icon
+  but are not listed.
+
+**`equipment.json`** has an entry for each item in `items.json` that is worn in one of the
+`/slots/` slots.
+
+```json
+{
+  "861": {
+    "slot": "weapon",
+    "twoHanded": true,
+    "attack": { "stab": 0, "slash": 0, "crush": 0, "magic": 0, "ranged": 69 },
+    "defence": { "stab": 0, "slash": 0, "crush": 0, "magic": 0, "ranged": 0 },
+    "strength": 0,
+    "rangedStrength": 0,
+    "magicDamage": 0,
+    "prayer": 0,
+    "speed": 4,
+    "range": 7
+  }
+}
+```
+
+- The bonus block is always complete. `magicDamage` is a percentage.
+- Weapons add `speed` (ticks per attack) and `range` (tiles) when the cache has them, and
+  `twoHanded` when true.
+- There are no skill requirements: the cache's requirement fields sometimes hold the level to
+  *make* the item instead.
 
 ### Displaying
 
@@ -90,7 +161,9 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
     `ItemSpriteFactory` by way of group-ironmen.
   - Renders are 2× with a 1px outline and the in-game shadow `0x302020`. Models that overflow the frame
     are zoomed out until they fit.
-  - `IconDump` also writes the stack tables and the named sprites listed in `scripts/aliases.mjs`.
+  - `IconDump` also writes the stack tables, the named sprites listed in `scripts/aliases.mjs`, and
+    the raw definition of every rendered id.
+- **`scripts/collections.mjs`** shapes those definitions into the `/data/` collections.
 - **`scripts/build.mjs`** does the whole pipeline and writes `dist/` in the published layout, including
   `manifest.json`.
 - **`scripts/verify.mjs`** fails the run when any of these is true:
@@ -98,6 +171,8 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
   - key ids are missing (coins stacks, whip, noted whip, bond);
   - any skill or slot alias is missing;
   - fewer than 300 stack tables;
+  - a collection lists or links an id without an icon, or is much smaller than expected;
+  - the bonuses of a few well-known items look wrong (the cache's params were renumbered);
   - an empty file;
   - the item count dropped more than 2% versus the live manifest.
 
@@ -134,7 +209,7 @@ Needs Node 22+ and JDK 21.
 
 ```bash
 npm ci
-npm test                  # resolver + cache-selection tests (also: python -m unittest discover -s test)
+npm test                  # resolver, cache-selection and collection tests (also: python -m unittest discover -s test)
 npm run build             # downloads ~190 MB cache into .work/, renders ~34k icons into dist/ (~5 min)
 npm run verify
 node scripts/check-live.mjs https://icons.scapekeeper.com

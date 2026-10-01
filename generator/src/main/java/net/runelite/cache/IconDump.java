@@ -9,6 +9,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,6 +31,7 @@ import net.runelite.cache.item.IconItemSpriteFactory;
  *   out/items/{id}.png     every item id that renders (base, noted, placeholder, bought, stack variants)
  *   out/sprites/{id}.png   frame 0 of each requested sprite id
  *   out/stacks.json        {"995": [[2, 996], ...]}  quantity breakpoint → variant item id
+ *   out/defs.json          [{"id": 4151, "name": "Abyssal whip", ...}]  raw definition of every rendered id
  *   out/stats.json         {"items": n, "noted": n, "placeholders": n, "failed": n, "empty": n, "sprites": n}
  * </pre>
  *
@@ -122,6 +124,7 @@ public class IconDump
 			int noted = 0;
 			int placeholders = 0;
 			Map<Integer, List<int[]>> stacks = new TreeMap<>();
+			List<Map<String, Object>> defs = new ArrayList<>();
 
 			for (ItemDefinition def : items.getItems())
 			{
@@ -156,6 +159,7 @@ public class IconDump
 				}
 				ImageIO.write(image, "PNG", new File(itemsOut, id + ".png"));
 				rendered++;
+				defs.add(rawDefinition(def));
 				if (def.notedTemplate != -1)
 				{
 					noted++;
@@ -181,6 +185,7 @@ public class IconDump
 
 			Gson gson = new GsonBuilder().create();
 			writeJson(gson, new File(out, "stacks.json"), stacks);
+			writeJson(gson, new File(out, "defs.json"), defs);
 			writeJson(gson, new File(out, "stats.json"), Map.of(
 				"items", rendered, "noted", noted, "placeholders", placeholders,
 				"failed", failed, "empty", empty, "sprites", spriteCount));
@@ -208,6 +213,34 @@ public class IconDump
 		}
 		table.sort((a, b) -> Integer.compare(a[0], b[0]));
 		return table;
+	}
+
+	/**
+	 * The definition fields scripts/collections.mjs shapes into the published data files. Values are
+	 * passed through as the cache holds them (after linking); all interpretation happens there.
+	 */
+	private static Map<String, Object> rawDefinition(ItemDefinition def)
+	{
+		Map<String, Object> raw = new LinkedHashMap<>();
+		raw.put("id", def.getId());
+		raw.put("name", def.name);
+		raw.put("examine", def.examine);
+		raw.put("cost", def.cost);
+		raw.put("stackable", def.stackable);
+		raw.put("tradeable", def.tradeable);
+		raw.put("geTradeable", def.geTradeable);
+		raw.put("members", def.members);
+		raw.put("weight", def.weight);
+		raw.put("wearPos", new int[]{def.wearPos1, def.wearPos2, def.wearPos3});
+		raw.put("options", def.interfaceOptions);
+		raw.put("notedId", def.notedID);
+		raw.put("notedTemplate", def.notedTemplate);
+		raw.put("placeholderId", def.placeholderId);
+		raw.put("placeholderTemplate", def.placeholderTemplateId);
+		raw.put("boughtId", def.boughtId);
+		raw.put("boughtTemplate", def.boughtTemplateId);
+		raw.put("params", def.params);
+		return raw;
 	}
 
 	private static boolean isFullyTransparent(BufferedImage image)

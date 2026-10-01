@@ -14,6 +14,7 @@ const INPUTS = [
   "generator/src",
   "scripts/build.mjs",
   "scripts/aliases.mjs",
+  "scripts/collections.mjs",
   "package-lock.json",
 ];
 
