@@ -15,6 +15,7 @@ const INPUTS = [
   "scripts/build.mjs",
   "scripts/aliases.mjs",
   "scripts/collections.mjs",
+  "scripts/map.mjs",
   "package-lock.json",
 ];
 

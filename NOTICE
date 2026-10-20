@@ -3,7 +3,7 @@ osrs-icons
 Game assets
 -----------
 The images and data published by this project (item icons, skill and equipment-slot sprites, stack
-tables) are extracted from the Old School RuneScape game cache. Old School RuneScape and all of its
+tables, the world map) are extracted from the Old School RuneScape game cache. Old School RuneScape and all of its
 assets are the property of Jagex Ltd. No ownership is claimed. They are provided unmodified in
 substance (re-encoded, scaled 2x) for use by non-commercial fan tools, in the spirit of Jagex's fan
 content guidelines. For takedown or questions, open an issue at
@@ -19,5 +19,9 @@ Third-party code
   RuneLite's net.runelite.cache.item.ItemSpriteFactory, Copyright (c) 2018, Adam <Adam@sigterm.info>,
   BSD-2-Clause (license text kept in the file header), via the cache scripts of
   christoabrown/group-ironmen (https://github.com/christoabrown/group-ironmen).
+- generator/src/main/java/net/runelite/cache/MapLabelDump.java and the tiling and map icon positions in
+  scripts/map.mjs and MapTileDump.java come from the cache scripts of christoabrown/group-ironmen,
+  Copyright (c) 2022, Christopher Brown, BSD-2-Clause (license text kept in MapLabelDump.java). The map
+  itself is drawn by RuneLite's net.runelite.cache.MapImageDumper.
 - The generator depends on net.runelite:cache (https://github.com/runelite/runelite), BSD-2-Clause.
 - sharp (Apache-2.0) and unzipper (MIT) are used by the build scripts.

@@ -14,6 +14,9 @@ val runeliteCache = "net.runelite:cache:latest.release"
 dependencies {
     implementation(runeliteCache)
     implementation("com.google.code.gson:gson:2.13.2")
+    // Already on the runtime classpath through net.runelite:cache; the map dumpers compile against them.
+    implementation("commons-cli:commons-cli:1.3.1")
+    implementation("org.slf4j:slf4j-api:1.7.25")
 }
 
 java {

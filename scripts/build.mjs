@@ -4,7 +4,8 @@
 //
 // dist/
 //   items/{id}.webp  skills/{skill}.png  slots/{slot}.png  manifest.json
-//   data/{stacks,items,noted,placeholders,equipment,skills,slots}.json
+//   data/{stacks,items,noted,placeholders,equipment,skills,slots,map}.json
+//   map/tiles/  map/zoom/  map/labels/  map/icons/   (the world map, see scripts/map.mjs)
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -15,6 +16,7 @@ import { ALIAS_GROUPS, allSpriteIds } from "./aliases.mjs";
 import { buildCollections } from "./collections.mjs";
 import { downloadCache } from "./fetch-cache.mjs";
 import { generatorHash } from "./generator-hash.mjs";
+import { buildMap } from "./map.mjs";
 
 sharp.cache(false);
 
@@ -85,6 +87,27 @@ execFileSync(
 );
 const stats = JSON.parse(fs.readFileSync(path.join(rawDir, "stats.json"), "utf8"));
 
+// The world map: the whole of each floor as one image (about 6 minutes, most of the memory), the
+// map icons' positions, and an image of every place name.
+log("drawing the world map");
+const mapRawDir = path.join(rawDir, "map");
+const runJava = (heap, mainClass, ...javaArgs) =>
+  execFileSync(
+    java,
+    [
+      heap,
+      "-Djava.awt.headless=true",
+      "-Dorg.slf4j.simpleLogger.defaultLogLevel=error",
+      "-cp",
+      path.join(libDir, "*"),
+      mainClass,
+      ...javaArgs,
+    ],
+    { stdio: "inherit" },
+  );
+runJava("-Xmx10g", "net.runelite.cache.MapTileDump", "--cache", cache.cacheDir, "--out", mapRawDir, "--xteas", cache.xteasPath);
+runJava("-Xmx2g", "net.runelite.cache.MapLabelDump", "--cachedir", cache.cacheDir, "--outputdir", path.join(mapRawDir, "labels"));
+
 fs.rmSync(outDir, { recursive: true, force: true });
 for (const dir of ["items", "data", ...Object.keys(ALIAS_GROUPS)]) {
   fs.mkdirSync(path.join(outDir, dir), { recursive: true });
@@ -121,6 +144,9 @@ for (const [name, collection] of Object.entries(collections)) {
   fs.writeFileSync(path.join(outDir, "data", `${name}.json`), JSON.stringify(collection));
 }
 
+log("cutting the world map into tiles");
+const mapCounts = await buildMap(mapRawDir, outDir, path.join(workDir, "map-tiles"), log);
+
 const manifest = {
   schema: 1,
   generatedAt: new Date().toISOString(),
@@ -136,6 +162,7 @@ const manifest = {
     stacks: Object.keys(stacks).length,
     named: Object.keys(collections.items).length,
     equipment: Object.keys(collections.equipment).length,
+    ...mapCounts,
   },
 };
 fs.writeFileSync(path.join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");

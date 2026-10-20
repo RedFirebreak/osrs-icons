@@ -1,7 +1,7 @@
 # osrs-icons
 
-Old School RuneScape item, skill and equipment-slot icons, rendered from the game cache and served
-from **https://icons.scapekeeper.com**. It is the shared icon source for
+Old School RuneScape item, skill and equipment-slot icons and the world map, rendered from the game
+cache and served from **https://icons.scapekeeper.com**. It is the shared icon source for
 [osrs-data-hub](https://github.com/RedFirebreak/osrs-data-hub),
 [ha-osrs-data](https://github.com/RedFirebreak/ha-osrs-data) and
 [ha-osrs-map](https://github.com/RedFirebreak/ha-osrs-map).
@@ -24,6 +24,11 @@ Paths are stable and **never deleted**. New ids are only ever added.
 | `/data/placeholders.json` | `{"14032": 4151}`: bank placeholder id → the item it stands in for. |
 | `/data/equipment.json` | Slot and bonuses of every wearable item in `items.json`. |
 | `/data/skills.json`, `/data/slots.json` | The valid `{skill}` and `{slot}` names, as arrays. |
+| `/map/tiles/{plane}_{x}_{y}.webp` | World map tile, 256×256 for 64×64 game tiles (4 px a tile), lossless. `x` and `y` are map squares (game coordinate ÷ 64), `y` going north. Upper floors show the floor below, darkened, where they have nothing of their own. See [World map](#world-map). |
+| `/map/zoom/{level}/{plane}_{x}_{y}.webp` | The same terrain shrunk, for far zoom: a tile of level 1, 2 or 3 covers 2, 4 or 8 map squares a side. |
+| `/map/labels/{hash}.webp` | One place name, as the game's world map draws it. Named by its content. |
+| `/map/icons/{hash}.webp` | The map icons (bank, altar, …) side by side, 15×15 each. Named by its content. |
+| `/data/map.json` | What of the map there is and where each icon and name goes. See [World map](#world-map). |
 | `/manifest.json` | What is live: `osrsBuild`, `openrs2.{id,timestamp}`, `runeliteCache`, `generator`, `generatedAt`, `counts`. |
 
 Every response has `Access-Control-Allow-Origin: *`. Images are cached for a day (`max-age=86400`,
@@ -137,6 +142,35 @@ Every consumer has a **base URL setting** that defaults to `https://icons.scapek
 
 This lets offline or privacy-minded self-hosters opt out or run their own copy.
 
+## World map
+
+`/data/map.json` is everything a map needs before it draws:
+
+```json
+{
+  "schema": 1,
+  "tileSize": 256,
+  "tiles": [["15_32", "15_33", …], …],
+  "levels": { "1": [["7_16", …], …], "2": […], "3": […] },
+  "icons": { "sheet": "icons/1f2e3d4c5b6a7980.webp", "size": 15, "at": { "50": { "50": { "3": [3222, 3219, 0] } } } },
+  "labels": { "files": ["a1b2c3d4e5f60718", …], "at": { "50": { "50": { "0": [3233, 3220, 4] } } }, "major": [458, 317, …] }
+}
+```
+
+- `tiles[plane]` lists the `{x}_{y}` of every tile under `/map/tiles/`; `levels[level][plane]` the same
+  for `/map/zoom/{level}/`. A tile that isn't listed has nothing on it.
+- `icons.at` and `labels.at` are keyed by map square, `x` then `y`, so a map looks up only what is in
+  view. Positions are game coordinates with `y` one higher than the game's (the tile's north edge).
+- An icon entry is keyed by its place in the sheet and holds `x, y, plane` triples; draw
+  `size × size` from `sheet` at `index × size`.
+- A label entry is keyed by plane and holds `x, y, i` triples: the name is
+  `/map/labels/{labels.files[i]}.webp`, centred on that point. `labels.major` lists the `i` of the names
+  of regions and seas, the only ones worth showing far zoomed out, regions first and larger first.
+- Tiles keep their name across game updates and are overwritten when the game redraws that place. The
+  sheet and the label images are named by their content, because the cache numbers them by position
+  and a new name would shift the numbers under a browser's cached copies. Like everything here, none
+  is ever deleted, so fetch `map.json` and the files it names together.
+
 ## Self-hosting
 
 Each publish also creates a [GitHub Release](../../releases) with `osrs-icons-rev{build}-{openrs2}.tar.gz`.
@@ -149,6 +183,7 @@ the consumers' base URL to that host.
 OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite cache lib) ──► build.mjs ──► verify.mjs ──► R2 + Release
  caches.json         newest COMPLETE       IconDump: every item, stack tables,     PNG → WebP     sanity gate
                      live cache            named sprites                          aliases
+                     + its map keys        MapTileDump, MapLabelDump: the map     map.mjs: tiles
 ```
 
 - **`scripts/fetch-cache.mjs`**
@@ -163,6 +198,12 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
     are zoomed out until they fit.
   - `IconDump` also writes the stack tables, the named sprites listed in `scripts/aliases.mjs`, and
     the raw definition of every rendered id.
+- **`MapTileDump`** draws each floor of the world map as one image with RuneLite's own
+  `MapImageDumper`, leaving out the icons and the names, and writes where every map icon is.
+  **`MapLabelDump`** renders each place name into an image of its own (from group-ironmen's cache
+  scripts). Drawing takes about 6 minutes and most of a 10 GB heap.
+- **`scripts/map.mjs`** cuts the floors into tiles, makes the zoomed-out levels, names the label images
+  and the icon sheet by their content, and writes `data/map.json`.
 - **`scripts/collections.mjs`** shapes those definitions into the `/data/` collections.
 - **`scripts/build.mjs`** does the whole pipeline and writes `dist/` in the published layout, including
   `manifest.json`.
@@ -174,7 +215,10 @@ OpenRS2 archive ──► fetch-cache.mjs ──► generator (Java, RuneLite ca
   - a collection lists or links an id without an icon, or is much smaller than expected;
   - the bonuses of a few well-known items look wrong (the cache's params were renumbered);
   - an empty file;
-  - the item count dropped more than 2% versus the live manifest.
+  - the item count dropped more than 2% versus the live manifest;
+  - fewer than 10k map tiles, a ground floor without Lumbridge, Varrock or the Grand Exchange, or
+    the map tile count dropped more than 2% versus the live manifest;
+  - `data/map.json` names a tile, level tile, label or icon sheet that isn't there.
 
 ### Publishing (`.github/workflows/publish.yml`)
 
@@ -210,7 +254,7 @@ Needs Node 22+ and JDK 21.
 ```bash
 npm ci
 npm test                  # resolver, cache-selection and collection tests (also: python -m unittest discover -s test)
-npm run build             # downloads ~190 MB cache into .work/, renders ~34k icons into dist/ (~5 min)
+npm run build             # downloads ~190 MB cache into .work/, renders ~34k icons and the map into dist/ (~20 min, 12 GB of memory)
 npm run verify
 node scripts/check-live.mjs https://icons.scapekeeper.com
 ```

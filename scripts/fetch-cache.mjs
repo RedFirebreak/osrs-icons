@@ -79,16 +79,24 @@ export async function fetchCacheList() {
   return res.json();
 }
 
-// Downloads and extracts the cache into `dir`. Returns the selection plus the directory that holds
-// main_file_cache.dat2. Reuses an existing extraction of the same cache id.
+// OpenRS2's keys.json is [{"mapsquare": 12850, "key": [a, b, c, d], ...}]; RuneLite's XteaKeyManager
+// reads [{"region": 12850, "keys": [a, b, c, d]}].
+export function toRuneliteXteas(keys) {
+  return keys.map((k) => ({ region: k.mapsquare, keys: k.key }));
+}
+
+// Downloads and extracts the cache into `dir`, with the map's XTEA keys beside it. Returns the
+// selection plus the directory that holds main_file_cache.dat2 and the path of the keys file. Reuses
+// an existing extraction of the same cache id.
 export async function downloadCache(dir) {
   const selected = selectCache(await fetchCacheList());
   const marker = path.join(dir, "openrs2.json");
   const cacheDir = path.join(dir, "cache");
+  const xteasPath = path.join(dir, "xteas.json");
 
-  if (fs.existsSync(marker) && JSON.parse(fs.readFileSync(marker, "utf8")).id === selected.id) {
+  if (fs.existsSync(marker) && JSON.parse(fs.readFileSync(marker, "utf8")).id === selected.id && fs.existsSync(xteasPath)) {
     console.error(`cache ${selected.id} already present in ${dir}`);
-    return { ...selected, cacheDir };
+    return { ...selected, cacheDir, xteasPath };
   }
 
   fs.rmSync(dir, { recursive: true, force: true });
@@ -107,8 +115,14 @@ export async function downloadCache(dir) {
   if (!fs.existsSync(path.join(cacheDir, "main_file_cache.dat2"))) {
     throw new Error(`Extracted cache has no ${cacheDir}/main_file_cache.dat2`);
   }
+
+  // The map's regions are encrypted; without their keys a region draws as empty.
+  const keysRes = await fetch(`${ARCHIVE}/caches/runescape/${selected.id}/keys.json`);
+  if (!keysRes.ok) throw new Error(`keys.json: HTTP ${keysRes.status}`);
+  fs.writeFileSync(xteasPath, JSON.stringify(toRuneliteXteas(await keysRes.json())));
+
   fs.writeFileSync(marker, JSON.stringify(selected));
-  return { ...selected, cacheDir };
+  return { ...selected, cacheDir, xteasPath };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -118,7 +132,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   } else {
     const dirIdx = args.indexOf("--dir");
     const dir = dirIdx >= 0 ? args[dirIdx + 1] : ".work/cache";
-    const { cacheDir, ...selected } = await downloadCache(dir);
+    const { cacheDir, xteasPath, ...selected } = await downloadCache(dir);
     console.log(JSON.stringify(selected));
   }
 }
