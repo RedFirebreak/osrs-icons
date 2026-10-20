@@ -15,6 +15,15 @@ const MIN_NAMED = 15000;
 const MIN_EQUIPMENT = 5000;
 // A new cache only ever adds items; a big drop means a partial or broken cache.
 const MAX_ITEM_DROP = 0.02;
+// The world map. A game update adds an area now and then and rarely removes one; a map that shrinks
+// by more than this lost map squares (a partial cache, or regions it couldn't read).
+const MIN_MAP_TILES = 10000;
+const MIN_GROUND_TILES = 2500;
+const MIN_MAP_ICONS = 100;
+const MIN_MAP_LABELS = 900;
+const MAX_MAP_TILE_DROP = 0.02;
+// Lumbridge, Varrock and the Grand Exchange: on the ground floor whatever else changes.
+const REQUIRED_MAP_TILES = ["0_50_50", "0_50_53", "0_49_54"];
 const REQUIRED_ITEMS = [
   995, 996, 997, 998, 999, 1000, 1001, 1002, 1003, 1004, // coins + every stack variant
   4151, // abyssal whip
@@ -113,6 +122,8 @@ export async function verify(dist, previousManifest) {
     if (JSON.stringify(listed) !== JSON.stringify(Object.keys(ALIAS_GROUPS[group]))) fail(`data/${group}.json does not match the ${group} aliases`);
   }
 
+  verifyMap(dist, manifest, fail);
+
   for (const dir of ["items", "data", ...Object.keys(ALIAS_GROUPS)]) {
     for (const file of fs.readdirSync(path.join(dist, dir))) {
       if (fs.statSync(path.join(dist, dir, file)).size === 0) fail(`${dir}/${file} is empty`);
@@ -126,7 +137,61 @@ export async function verify(dist, previousManifest) {
     }
   }
 
+  if (previousManifest?.counts?.mapTiles) {
+    const floor = Math.floor(previousManifest.counts.mapTiles * (1 - MAX_MAP_TILE_DROP));
+    if ((manifest.counts?.mapTiles ?? 0) < floor) {
+      fail(`map tile count dropped from ${previousManifest.counts.mapTiles} to ${manifest.counts?.mapTiles} (floor ${floor})`);
+    }
+  }
+
   return errors;
+}
+
+/** data/map.json lists exactly what is under map/, and every file it names is there. */
+export function verifyMap(dist, manifest, fail) {
+  const mapFile = path.join(dist, "data", "map.json");
+  if (!fs.existsSync(mapFile)) return fail("data/map.json missing");
+  const map = JSON.parse(fs.readFileSync(mapFile, "utf8"));
+  const files = (dir) => {
+    const abs = path.join(dist, "map", dir);
+    return new Set(fs.existsSync(abs) ? fs.readdirSync(abs) : []);
+  };
+
+  const tiles = files("tiles");
+  const listed = (map.tiles ?? []).flatMap((floor, plane) => floor.map((xy) => `${plane}_${xy}.webp`));
+  if (tiles.size < MIN_MAP_TILES) fail(`only ${tiles.size} map tiles (expected >= ${MIN_MAP_TILES})`);
+  if ((map.tiles?.[0]?.length ?? 0) < MIN_GROUND_TILES) fail(`only ${map.tiles?.[0]?.length ?? 0} ground-floor map tiles`);
+  if (listed.length !== tiles.size || listed.some((file) => !tiles.has(file))) {
+    fail(`data/map.json lists ${listed.length} tiles, map/tiles/ has ${tiles.size}`);
+  }
+  if (manifest.counts?.mapTiles !== tiles.size) fail(`manifest counts.mapTiles=${manifest.counts?.mapTiles} but ${tiles.size} files`);
+  for (const tile of REQUIRED_MAP_TILES) {
+    if (!tiles.has(`${tile}.webp`)) fail(`map tile ${tile} missing`);
+  }
+
+  for (const [level, floors] of Object.entries(map.levels ?? {})) {
+    const have = files(path.join("zoom", level));
+    for (const [plane, floor] of floors.entries()) {
+      for (const xy of floor) if (!have.has(`${plane}_${xy}.webp`)) fail(`map/zoom/${level}/${plane}_${xy}.webp missing`);
+    }
+  }
+  if (Object.keys(map.levels ?? {}).length !== 3) fail("data/map.json should have 3 zoom levels");
+
+  if (!map.icons?.sheet || !fs.existsSync(path.join(dist, "map", map.icons.sheet))) fail(`map icon sheet ${map.icons?.sheet} missing`);
+  if ((manifest.counts?.mapIcons ?? 0) < MIN_MAP_ICONS) fail(`only ${manifest.counts?.mapIcons} kinds of map icon`);
+
+  const labels = files("labels");
+  const labelFiles = map.labels?.files ?? [];
+  if (labelFiles.length < MIN_MAP_LABELS) fail(`only ${labelFiles.length} map labels (expected >= ${MIN_MAP_LABELS})`);
+  for (const name of labelFiles) if (!labels.has(`${name}.webp`)) fail(`map label ${name}.webp missing`);
+  if ((map.labels?.major ?? []).some((i) => labelFiles[i] === undefined)) fail("data/map.json: a major label points past the labels");
+  if (!(map.labels?.major?.length > 10)) fail("data/map.json: hardly any labels name a region or a sea");
+
+  for (const dir of ["tiles", "labels", "icons"]) {
+    for (const file of files(dir)) {
+      if (fs.statSync(path.join(dist, "map", dir, file)).size === 0) fail(`map/${dir}/${file} is empty`);
+    }
+  }
 }
 
 async function loadPrevious(src) {
