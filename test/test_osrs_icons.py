@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "clients"))
 
-from osrs_icons import icons_base, item_icon_url, prayer_icon_url, skill_icon_url, slot_icon_url, stacked_item_id  # noqa: E402
+from osrs_icons import hiscore_icon_url, hiscore_slug, icons_base, item_icon_url, prayer_icon_url, skill_icon_url, slot_icon_url, stacked_item_id  # noqa: E402
 
 STACKS = {"995": [[2, 996], [3, 997], [4, 998], [5, 999], [25, 1000], [100, 1001], [250, 1002], [1000, 1003], [10000, 1004]]}
 BASE = "https://icons.example"
@@ -33,6 +33,13 @@ class ResolverTest(unittest.TestCase):
         self.assertEqual(slot_icon_url(BASE, "AMULET"), f"{BASE}/slots/amulet.png")
         self.assertEqual(prayer_icon_url(BASE, "RP_TRINITAS"), f"{BASE}/prayers/rp_trinitas.png")
         self.assertIsNone(prayer_icon_url(None, "PIETY"))
+        self.assertEqual(hiscore_icon_url(BASE, "Kree'Arra"), f"{BASE}/hiscores/kreearra.png")
+        self.assertIsNone(hiscore_icon_url(None, "Zulrah"))
+
+    def test_hiscore_slug(self):
+        self.assertEqual(hiscore_slug("Chambers of Xeric: Challenge Mode"), "chambers_of_xeric_challenge_mode")
+        self.assertEqual(hiscore_slug("LMS - Rank"), "lms_rank")
+        self.assertEqual(hiscore_slug("K\u2019ril Tsutsaroth"), "kril_tsutsaroth")
 
 
 if __name__ == "__main__":

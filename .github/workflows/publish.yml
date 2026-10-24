@@ -143,6 +143,7 @@ jobs:
           rclone copy dist/skills "r2:$R2_BUCKET/skills" "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/png"
           rclone copy dist/slots  "r2:$R2_BUCKET/slots"  "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/png"
           rclone copy dist/prayers "r2:$R2_BUCKET/prayers" "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/png"
+          rclone copy dist/hiscores "r2:$R2_BUCKET/hiscores" "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/png"
           # The map's files before data/map.json, which names them.
           rclone copy dist/map    "r2:$R2_BUCKET/map"    "${common[@]}" --header-upload "$IMAGE_CACHE" --header-upload "Content-Type: image/webp"
           rclone copy dist/data   "r2:$R2_BUCKET/data"   "${common[@]}" --header-upload "$JSON_CACHE" --header-upload "Content-Type: application/json"

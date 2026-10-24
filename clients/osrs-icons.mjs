@@ -49,3 +49,26 @@ export function prayerIconUrl(base, prayer) {
   if (!base || !prayer) return null;
   return `${base}/prayers/${String(prayer).toLowerCase()}.png`;
 }
+
+/**
+ * A hiscores activity name ("Kree'Arra", "Clue Scrolls (all)", "LMS - Rank") → its slug
+ * ("kreearra", "clue_scrolls_all", "lms_rank"): lowercase, apostrophes dropped, every other run of
+ * characters that aren't a-z or 0-9 one "_".
+ */
+export function hiscoreSlug(activity) {
+  return String(activity ?? "")
+    .toLowerCase()
+    .replace(/['\u2019]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * A hiscores activity (a boss, "Clue Scrolls (all)", "LMS - Rank", ...) → the sprite RuneLite's
+ * hiscore panel draws for it. /data/hiscores.json lists the slugs that have one; clue tiers don't.
+ */
+export function hiscoreIconUrl(base, activity) {
+  const slug = hiscoreSlug(activity);
+  if (!base || !slug) return null;
+  return `${base}/hiscores/${slug}.png`;
+}

@@ -18,13 +18,14 @@ Paths are stable and **never deleted**. New ids are only ever added.
 | `/items/{id}.webp` | Item icon, 72×64 (2× the in-game 36×32), lossless. Covers every renderable id: normal, **noted**, **placeholder**, bought and stack variants (e.g. coins `995`–`1004`). |
 | `/skills/{skill}.png` | Skill icon. `{skill}` is the lowercase skill name: `attack` … `sailing`. There is no icon for "overall". |
 | `/prayers/{prayer}.png` | Prayer icon, lit, as the prayer book shows a prayer that is on. `{prayer}` is RuneLite's `Prayer` enum name in lowercase, as the exporter plugin sends it in `player.activePrayers`: `protect_from_melee`, `piety`, `zeal`, … and the Ruinous Powers as `rp_trinitas`, `rp_decimate`, … (see `/data/prayers.json`). |
+| `/hiscores/{activity}.png` | A hiscores activity's icon, as RuneLite's hiscore panel draws it: every boss, and `clue_scrolls_all`, `lms_rank`, `collections_logged` and the other activities that have one (clue tiers don't). `{activity}` is the hiscores' name lowercased, apostrophes dropped and every other run of characters outside `a-z 0-9` one `_`: `Kree'Arra` → `kreearra`, `Chambers of Xeric: Challenge Mode` → `chambers_of_xeric_challenge_mode` (`hiscoreSlug` in the clients; see `/data/hiscores.json`). |
 | `/slots/{slot}.png` | Empty equipment-slot silhouette. `{slot}` is RuneLite's `EquipmentInventorySlot` in lowercase: `head cape amulet weapon body shield legs gloves boots ring ammo`. |
 | `/data/stacks.json` | Stack tables: `{"995": [[2, 996], [3, 997], …, [10000, 1004]]}`. Each entry is a quantity breakpoint and the variant item id, sorted by breakpoint. |
 | `/data/items.json` | Every named item that has an icon, with its game data. See [Data collections](#data-collections). |
 | `/data/noted.json` | `{"4152": 4151}`: noted id → the item it is a note of. |
 | `/data/placeholders.json` | `{"14032": 4151}`: bank placeholder id → the item it stands in for. |
 | `/data/equipment.json` | Slot and bonuses of every wearable item in `items.json`. |
-| `/data/skills.json`, `/data/slots.json`, `/data/prayers.json` | The valid `{skill}`, `{slot}` and `{prayer}` names, as arrays. |
+| `/data/skills.json`, `/data/slots.json`, `/data/prayers.json`, `/data/hiscores.json` | The valid `{skill}`, `{slot}`, `{prayer}` and `{activity}` names, as arrays. |
 | `/map/tiles/{plane}_{x}_{y}.webp` | World map tile, 256×256 for 64×64 game tiles (4 px a tile), lossless. `x` and `y` are map squares (game coordinate ÷ 64), `y` going north. Upper floors show the floor below, darkened, where they have nothing of their own. See [World map](#world-map). |
 | `/map/zoom/{level}/{plane}_{x}_{y}.webp` | The same terrain shrunk, for far zoom: a tile of level 1, 2 or 3 covers 2, 4 or 8 map squares a side. |
 | `/map/labels/{hash}.webp` | One place name, as the game's world map draws it. Named by its content. |
@@ -50,13 +51,14 @@ implementations (no dependencies, both with tests) are meant to be copied:
 - Python: [`clients/osrs_icons.py`](clients/osrs_icons.py)
 
 ```js
-import { iconsBase, itemIconUrl, prayerIconUrl, skillIconUrl, slotIconUrl } from "./osrs-icons.mjs";
+import { hiscoreIconUrl, iconsBase, itemIconUrl, prayerIconUrl, skillIconUrl, slotIconUrl } from "./osrs-icons.mjs";
 const base = iconsBase(config.iconsUrl); // "" disables icons → null
 const stacks = await fetch(`${base}/data/stacks.json`).then((r) => r.json());
 itemIconUrl(base, stacks, 995, 250); // → https://icons.scapekeeper.com/items/1002.webp
 skillIconUrl(base, "Attack");        // → …/skills/attack.png
 slotIconUrl(base, "AMULET");         // → …/slots/amulet.png
 prayerIconUrl(base, "PIETY");        // → …/prayers/piety.png
+hiscoreIconUrl(base, "Kree'Arra");   // → …/hiscores/kreearra.png
 ```
 
 ### Data collections

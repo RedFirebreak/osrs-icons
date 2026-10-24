@@ -107,7 +107,96 @@ export const PRAYERS = {
   rp_intensify: 4864,
 };
 
-export const ALIAS_GROUPS = { skills: SKILLS, slots: SLOTS, prayers: PRAYERS };
+// Keys are the hiscores' activity names ("Kree'Arra", "Clue Scrolls (all)", "LMS - Rank"), lowercased,
+// apostrophes dropped and every other run of characters that aren't a-z or 0-9 made one "_" (see
+// hiscoreSlug in clients/osrs-icons.mjs). Images are the sprites RuneLite's hiscore panel draws for
+// them (net.runelite.client.hiscore.HiscoreSkill). Clue tiers have none: use the clue scroll items.
+export const HISCORES = {
+  league_points: 5857, // League Points
+  bounty_hunter_hunter: 5854, // Bounty Hunter - Hunter
+  bounty_hunter_rogue: 5855, // Bounty Hunter - Rogue
+  clue_scrolls_all: 5853, // Clue Scrolls (all)
+  lms_rank: 5856, // LMS - Rank
+  pvp_arena_rank: 5859, // PvP Arena - Rank
+  soul_wars_zeal: 5858, // Soul Wars Zeal
+  rifts_closed: 5860, // Rifts closed
+  colosseum_glory: 5862, // Colosseum Glory
+  collections_logged: 6390, // Collections Logged
+  abyssal_sire: 4276, // Abyssal Sire
+  alchemical_hydra: 4289, // Alchemical Hydra
+  amoxliatl: 5639, // Amoxliatl
+  araxxor: 5638, // Araxxor
+  artio: 5622, // Artio
+  barrows_chests: 4267, // Barrows Chests
+  brutus: 6352, // Brutus
+  bryophyta: 4262, // Bryophyta
+  callisto: 5622, // Callisto
+  calvarion: 5623, // Calvar'ion
+  cerberus: 4280, // Cerberus
+  chambers_of_xeric: 4288, // Chambers of Xeric
+  chambers_of_xeric_challenge_mode: 4296, // Chambers of Xeric: Challenge Mode
+  chaos_elemental: 5621, // Chaos Elemental
+  chaos_fanatic: 5625, // Chaos Fanatic
+  commander_zilyana: 4284, // Commander Zilyana
+  corporeal_beast: 4287, // Corporeal Beast
+  crazy_archaeologist: 5626, // Crazy Archaeologist
+  dagannoth_prime: 4294, // Dagannoth Prime
+  dagannoth_rex: 4293, // Dagannoth Rex
+  dagannoth_supreme: 4292, // Dagannoth Supreme
+  deranged_archaeologist: 5627, // Deranged Archaeologist
+  doom_of_mokhaiotl: 6347, // Doom of Mokhaiotl
+  duke_sucellus: 5632, // Duke Sucellus
+  the_fractured_archive: 8360, // The Fractured Archive
+  general_graardor: 4282, // General Graardor
+  giant_mole: 4263, // Giant Mole
+  grotesque_guardians: 4264, // Grotesque Guardians
+  hespori: 4271, // Hespori
+  kalphite_queen: 4270, // Kalphite Queen
+  king_black_dragon: 4274, // King Black Dragon
+  kraken: 4275, // Kraken
+  kreearra: 4285, // Kree'Arra
+  kril_tsutsaroth: 4283, // K'ril Tsutsaroth
+  lunar_chests: 5637, // Lunar Chests
+  mad_angel: 8359, // Mad Angel
+  maggot_king: 8358, // Maggot King
+  mimic: 4260, // Mimic
+  nex: 4291, // Nex
+  nightmare: 4286, // Nightmare
+  phosanis_nightmare: 4286, // Phosani's Nightmare
+  obor: 4261, // Obor
+  phantom_muspah: 4299, // Phantom Muspah
+  sarachnis: 4269, // Sarachnis
+  scorpia: 5628, // Scorpia
+  scurrius: 5635, // Scurrius
+  shellbane_gryphon: 6349, // Shellbane Gryphon
+  skotizo: 4272, // Skotizo
+  sol_heredit: 5636, // Sol Heredit
+  spindel: 5624, // Spindel
+  tempoross: 4265, // Tempoross
+  the_gauntlet: 4278, // The Gauntlet
+  the_corrupted_gauntlet: 4295, // The Corrupted Gauntlet
+  the_hueycoatl: 5640, // The Hueycoatl
+  the_leviathan: 5633, // The Leviathan
+  the_royal_titans: 6345, // The Royal Titans
+  the_whisperer: 5631, // The Whisperer
+  theatre_of_blood: 4290, // Theatre of Blood
+  theatre_of_blood_hard_mode: 4290, // Theatre of Blood: Hard Mode
+  thermonuclear_smoke_devil: 4277, // Thermonuclear Smoke Devil
+  tombs_of_amascut: 4297, // Tombs of Amascut
+  tombs_of_amascut_expert_mode: 4298, // Tombs of Amascut: Expert Mode
+  tzkal_zuk: 5630, // TzKal-Zuk
+  tztok_jad: 5629, // TzTok-Jad
+  vardorvis: 5634, // Vardorvis
+  venenatis: 5624, // Venenatis
+  vetion: 5623, // Vet'ion
+  vorkath: 4281, // Vorkath
+  wintertodt: 4266, // Wintertodt
+  yama: 6346, // Yama
+  zalcano: 4273, // Zalcano
+  zulrah: 4279, // Zulrah
+};
+
+export const ALIAS_GROUPS = { skills: SKILLS, slots: SLOTS, prayers: PRAYERS, hiscores: HISCORES };
 
 export function allSpriteIds() {
   return [...new Set(Object.values(ALIAS_GROUPS).flatMap((group) => Object.values(group)))];

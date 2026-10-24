@@ -1,10 +1,10 @@
 // Shapes the raw item definitions IconDump writes (defs.json, one record per rendered id) into the
 // published data files:
 //   /data/items.json  /data/noted.json  /data/placeholders.json  /data/equipment.json
-//   /data/skills.json  /data/slots.json  /data/prayers.json
+//   /data/skills.json  /data/slots.json  /data/prayers.json  /data/hiscores.json
 // A collection only ever lists ids that have an icon. Field names are part of the public contract:
 // only ever add to them.
-import { PRAYERS, SKILLS, SLOTS } from "./aliases.mjs";
+import { HISCORES, PRAYERS, SKILLS, SLOTS } from "./aliases.mjs";
 
 // ItemDefinition.wearPos1 → slot name. Positions without a slot icon (6 arms, 8 hair, 11 jaw) are
 // not equipment slots a player sees.
@@ -86,5 +86,5 @@ export function buildCollections(defs) {
     }
   }
 
-  return { items, noted, placeholders, equipment, skills: Object.keys(SKILLS), slots: Object.keys(SLOTS), prayers: Object.keys(PRAYERS) };
+  return { items, noted, placeholders, equipment, skills: Object.keys(SKILLS), slots: Object.keys(SLOTS), prayers: Object.keys(PRAYERS), hiscores: Object.keys(HISCORES) };
 }
