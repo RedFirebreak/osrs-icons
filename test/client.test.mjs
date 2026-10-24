@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   iconsBase,
   itemIconUrl,
+  prayerIconUrl,
   skillIconUrl,
   slotIconUrl,
   stackedItemId,
@@ -39,4 +40,8 @@ test("URLs", () => {
   assert.equal(skillIconUrl(base, "Attack"), `${base}/skills/attack.png`);
   assert.equal(skillIconUrl(base, "Overall"), null);
   assert.equal(slotIconUrl(base, "AMULET"), `${base}/slots/amulet.png`);
+  assert.equal(prayerIconUrl(base, "PROTECT_FROM_MELEE"), `${base}/prayers/protect_from_melee.png`);
+  assert.equal(prayerIconUrl(base, "RP_TRINITAS"), `${base}/prayers/rp_trinitas.png`);
+  assert.equal(prayerIconUrl(null, "PIETY"), null);
+  assert.equal(prayerIconUrl(base, ""), null);
 });

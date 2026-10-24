@@ -40,3 +40,12 @@ export function slotIconUrl(base, slot) {
   if (!base || !slot) return null;
   return `${base}/slots/${String(slot).toLowerCase()}.png`;
 }
+
+/**
+ * RuneLite Prayer name ("PROTECT_FROM_MELEE", "RP_TRINITAS", ...) → its lit prayer-book icon. The
+ * exporter plugin sends these names in player.activePrayers.
+ */
+export function prayerIconUrl(base, prayer) {
+  if (!base || !prayer) return null;
+  return `${base}/prayers/${String(prayer).toLowerCase()}.png`;
+}

@@ -47,3 +47,10 @@ def slot_icon_url(base: str | None, slot: str | None) -> str | None:
     if not base or not slot:
         return None
     return f"{base}/slots/{slot.lower()}.png"
+
+
+def prayer_icon_url(base: str | None, prayer: str | None) -> str | None:
+    """RuneLite Prayer name ('PROTECT_FROM_MELEE', 'RP_TRINITAS', ...) -> its lit prayer-book icon."""
+    if not base or not prayer:
+        return None
+    return f"{base}/prayers/{prayer.lower()}.png"
