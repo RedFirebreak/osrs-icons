@@ -3,8 +3,9 @@
 //   node scripts/build.mjs [--out dist] [--work .work]
 //
 // dist/
-//   items/{id}.webp  skills/{skill}.png  slots/{slot}.png  prayers/{prayer}.png  manifest.json
-//   data/{stacks,items,noted,placeholders,equipment,skills,slots,prayers,map}.json
+//   items/{id}.webp  skills/{skill}.png  slots/{slot}.png  prayers/{prayer}.png  hiscores/{activity}.png
+//   manifest.json
+//   data/{stacks,items,noted,placeholders,equipment,skills,slots,prayers,hiscores,map}.json
 //   map/tiles/  map/zoom/  map/labels/  map/icons/   (the world map, see scripts/map.mjs)
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";

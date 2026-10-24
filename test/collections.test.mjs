@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PRAYERS, SKILLS, SLOTS } from "../scripts/aliases.mjs";
+import { HISCORES, PRAYERS, SKILLS, SLOTS } from "../scripts/aliases.mjs";
 import { buildCollections } from "../scripts/collections.mjs";
 
 // A raw definition as IconDump writes it to defs.json; only rendered ids appear there.
@@ -195,8 +195,9 @@ test("only items worn in a published slot are equipment", () => {
   for (const entry of Object.values(built.equipment)) assert.ok(entry.slot in SLOTS);
 });
 
-test("skills, slots and prayers list the alias names", () => {
+test("skills, slots, prayers and hiscores list the alias names", () => {
   assert.deepEqual(built.skills, Object.keys(SKILLS));
   assert.deepEqual(built.slots, Object.keys(SLOTS));
   assert.deepEqual(built.prayers, Object.keys(PRAYERS));
+  assert.deepEqual(built.hiscores, Object.keys(HISCORES));
 });

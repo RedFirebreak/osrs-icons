@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  hiscoreIconUrl,
+  hiscoreSlug,
   iconsBase,
   itemIconUrl,
   prayerIconUrl,
@@ -44,4 +46,17 @@ test("URLs", () => {
   assert.equal(prayerIconUrl(base, "RP_TRINITAS"), `${base}/prayers/rp_trinitas.png`);
   assert.equal(prayerIconUrl(null, "PIETY"), null);
   assert.equal(prayerIconUrl(base, ""), null);
+  assert.equal(hiscoreIconUrl(base, "Zulrah"), `${base}/hiscores/zulrah.png`);
+  assert.equal(hiscoreIconUrl(base, "Kree'Arra"), `${base}/hiscores/kreearra.png`);
+  assert.equal(hiscoreIconUrl(null, "Zulrah"), null);
+  assert.equal(hiscoreIconUrl(base, " - "), null);
+});
+
+test("hiscore slugs", () => {
+  assert.equal(hiscoreSlug("Chambers of Xeric: Challenge Mode"), "chambers_of_xeric_challenge_mode");
+  assert.equal(hiscoreSlug("Phosani's Nightmare"), "phosanis_nightmare");
+  assert.equal(hiscoreSlug("TzKal-Zuk"), "tzkal_zuk");
+  assert.equal(hiscoreSlug("Clue Scrolls (all)"), "clue_scrolls_all");
+  assert.equal(hiscoreSlug("LMS - Rank"), "lms_rank");
+  assert.equal(hiscoreSlug("K’ril Tsutsaroth"), "kril_tsutsaroth");
 });

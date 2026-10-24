@@ -5,6 +5,7 @@ Copy it into a consumer; it has no dependencies. Mirrors clients/osrs-icons.mjs.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 
 DEFAULT_ICONS_URL = "https://icons.scapekeeper.com"
@@ -54,3 +55,17 @@ def prayer_icon_url(base: str | None, prayer: str | None) -> str | None:
     if not base or not prayer:
         return None
     return f"{base}/prayers/{prayer.lower()}.png"
+
+
+def hiscore_slug(activity: str | None) -> str:
+    """Hiscores activity name ("Kree'Arra", "LMS - Rank") -> its slug ('kreearra', 'lms_rank')."""
+    text = (activity or "").lower().replace("'", "").replace("\u2019", "")
+    return re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+
+
+def hiscore_icon_url(base: str | None, activity: str | None) -> str | None:
+    """A hiscores activity (a boss, 'Clue Scrolls (all)', ...) -> the sprite RuneLite's hiscore panel draws."""
+    slug = hiscore_slug(activity)
+    if not base or not slug:
+        return None
+    return f"{base}/hiscores/{slug}.png"
